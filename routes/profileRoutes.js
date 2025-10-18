@@ -96,6 +96,37 @@ router.get("/count", async (req, res) => {
   }
 });
 
+
+// ✅ New route for category-wise count
+router.get("/profiletype-counts", async (req, res) => {
+  try {
+    const profiles = await Profile.find();
+    const profileTypeCounts = {};
+
+    // Loop through all profiles
+    profiles.forEach(profile => {
+      if(!profile.profiletype || profile.profiletype.trim() === "") return;
+
+      // Capitalize first letter for consistency
+      const typeName = profile.profiletype.trim().charAt(0).toUpperCase() + profile.profiletype.trim().slice(1).toLowerCase();
+
+      profileTypeCounts[typeName] = (profileTypeCounts[typeName] || 0) + 1;
+    });
+
+    // Optional: ensure all default types appear even if 0
+    const defaultTypes = ["Political","Business","Professional","Personal","Social"];
+    defaultTypes.forEach(type => {
+      if(!profileTypeCounts[type]) profileTypeCounts[type] = 0;
+    });
+
+    res.status(200).json(profileTypeCounts);
+  } catch(err) {
+    console.error(err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+
 // ✅ Category filter route
 router.get("/category/:category", async (req, res) => {
   try {

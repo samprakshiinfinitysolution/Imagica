@@ -36,3 +36,17 @@ export const deleteContact = async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 };
+
+
+// controllers/contactController.js
+
+
+// ✅ Count all contacts
+export const getContactCount = async (req, res) => {
+  try {
+    const count = await Contact.countDocuments();
+    res.status(200).json({ count });
+  } catch (error) {
+    res.status(500).json({ message: "Error fetching contact count", error });
+  }
+};

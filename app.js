@@ -58,7 +58,7 @@ app.use("/uploads", express.static(path.join(process.cwd(), "uploads")));
 
 // API Routes
 app.use("/api/frames", frameRoutes);
-app.use("/api/contacts", contactRoutes);
+app.use("/api/contact", contactRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/profiles", profileRoutes);
 app.use("/api/locations", locationRoutes);

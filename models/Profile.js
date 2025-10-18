@@ -10,7 +10,7 @@ const profileSchema = new mongoose.Schema({
   language: { type: String },
   religion: { type: String },
   birthDate: { type: Date },
-  categories:{type:String},
+categories: { type: [String], default: [] },
   businessName:{type:String},
   businessTagline:{type:String},  
 
