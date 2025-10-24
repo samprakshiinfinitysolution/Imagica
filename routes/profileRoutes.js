@@ -188,4 +188,16 @@ router.delete("/:id", async (req, res) => {
     res.status(500).json({ message: "Server error" });
   }
 });
+
+router.get("/type/:profiletype", async (req, res) => {
+  try {
+    const { profiletype } = req.params;
+    const profiles = await Profile.find({ profiletype });
+    res.json(profiles);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Error fetching profiles by type" });
+  }
+});
+
 export default router;
