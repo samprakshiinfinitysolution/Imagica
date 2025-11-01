@@ -9,6 +9,8 @@ const frameSchema = new mongoose.Schema(
       name: { type: Object },
       position: { type: Object },
       designation: { type: Object },
+         type: mongoose.Schema.Types.Mixed, // ✅ any key-value layout allowed
+    default: {},
       businessName: { type: Object },
       instagram: { type: Object },
       facebook: { type: Object },
