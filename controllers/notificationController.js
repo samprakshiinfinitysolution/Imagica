@@ -32,4 +32,22 @@ export const createNotification = async (req, res) => {
   }
 };
 
+// Update a notification (supports optional new coverImage upload)
+export const updateNotification = async (req, res) => {
+  try {
+    const id = req.params.id;
+    const { title, desc, date, time, category } = req.body;
+    const coverImage = req.file?.path; // if a new file uploaded, multer-cloudinary stores URL in path
+
+    const update = { title, desc, date, time, category };
+    if (coverImage) update.coverImage = coverImage;
+
+    const updated = await Notification.findByIdAndUpdate(id, update, { new: true });
+    if (!updated) return res.status(404).json({ message: 'Notification not found' });
+    res.json(updated);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
 

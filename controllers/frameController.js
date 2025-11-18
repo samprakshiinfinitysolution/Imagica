@@ -218,3 +218,36 @@ export const getAllFrames = async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 };
+
+// ✅ Update frame image (replace the image for a single frame)
+export const updateFrameImage = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    if (!req.file) {
+      return res.status(400).json({ message: 'No file uploaded' });
+    }
+
+    // Upload new image to Cloudinary
+    const result = await new Promise((resolve, reject) => {
+      const uploadStream = cloudinary.uploader.upload_stream(
+        { folder: 'frames', resource_type: 'image' },
+        (error, result) => {
+          if (error) return reject(error);
+          resolve(result);
+        }
+      );
+      streamifier.createReadStream(req.file.buffer).pipe(uploadStream);
+    });
+
+    // Update frame document
+    const updated = await Frame.findByIdAndUpdate(id, { framePath: result.secure_url }, { new: true });
+
+    if (!updated) return res.status(404).json({ message: 'Frame not found' });
+
+    res.status(200).json({ message: 'Frame image updated', frame: updated });
+  } catch (err) {
+    console.error('Error updating frame image:', err);
+    res.status(500).json({ message: 'Failed to update frame image', error: err.message });
+  }
+};

@@ -45,6 +45,7 @@ import Notification from "../models/Notification.js";
 import {
   getNotifications,
   createNotification,
+  updateNotification,
 } from "../controllers/notificationController.js";
 
 const router = express.Router();
@@ -67,6 +68,9 @@ const upload = multer({ storage });
 // ✅ Routes
 router.get("/", getNotifications);
 router.post("/", upload.single("coverImage"), createNotification);
+
+// ✅ Update notification by ID (supports optional coverImage upload)
+router.put("/:id", upload.single("coverImage"), updateNotification);
 
 // ✅ DELETE notification by ID
 router.delete("/:id", async (req, res) => {
