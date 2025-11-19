@@ -56,6 +56,7 @@ import {
   getAllCategories,
   deleteImagesByCategory,
   deleteSingleImage,
+  createCategory,
 } from "../controllers/imageController.js";
 import multer from "multer";
 import { CloudinaryStorage } from "multer-storage-cloudinary";
@@ -80,6 +81,9 @@ const upload = multer({ storage });
 
 // Routes
 router.post("/upload", upload.array("images", 20), addImage);
+
+// create explicit category
+router.post("/category", createCategory);
 
 router.get("/count", async (req, res) => {
   try {
