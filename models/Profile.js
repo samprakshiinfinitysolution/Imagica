@@ -40,8 +40,11 @@ showTwitter: { type: Boolean, default: true },
 showFacebook: { type: Boolean, default: true },
 showLinkedIn: { type: Boolean, default: true },
 showPosition: { type: Boolean, default: true },
+showCategories: { type: Boolean, default: true },
 showBusinessName: { type: Boolean, default: true },
 showBusinessTagline: { type: Boolean, default: true },
+  // whether to render the uploaded profile photo in the public preview (/image-view)
+  showProfileImage: { type: Boolean, default: true },
 
 }, { timestamps: true });
 

@@ -17,9 +17,41 @@ export const getMyProfile = async (req, res) => {
 
     // ✅ Find profile of the logged-in user
     const profile = await Profile.findOne({ email: userEmail });
-
     if (!profile) {
-      return res.status(404).json({ message: "No profile found for this user" });
+      // Return an empty profile object (prefilled with email) instead of 404 so
+      // frontend can render the profile creation form for new users.
+      const emptyProfile = {
+        email: userEmail,
+        profiletype: "",
+        file: null,
+        name: "",
+        mobile: "",
+        categories: [],
+        visibleName: true,
+        showDesignation: true,
+        showMobile: true,
+        showCategories: true,
+        showAddress: true,
+        showInstagram: true,
+        showFacebook: true,
+        showLinkedIn: true,
+        showPosition: true,
+        showProfileImage: true,
+      };
+
+      return res.status(200).json({ profile: emptyProfile, isNew: true });
+    }
+
+    // Ensure `categories` is returned as an array to the frontend
+    if (!Array.isArray(profile.categories)) {
+      if (typeof profile.categories === "string") {
+        profile.categories = profile.categories
+          .split(",")
+          .map((c) => c.trim())
+          .filter(Boolean);
+      } else {
+        profile.categories = profile.categories || [];
+      }
     }
 
     res.status(200).json({ profile });
@@ -38,22 +70,54 @@ export const updateMyProfile = async (req, res) => {
     if (!userEmail)
       return res.status(400).json({ message: "Email not found in token" });
 
-    const profile = await Profile.findOne({ email: userEmail });
-    if (!profile)
-      return res.status(404).json({ message: "Profile not found" });
+    let profile = await Profile.findOne({ email: userEmail });
+    // If profile doesn't exist yet, create a new one (so new users can save their data)
+    const isNewProfile = !profile;
+    if (!profile) {
+      profile = new Profile({ email: userEmail });
+    }
 
     // ✅ Update text fields safely
+    const booleanFields = [
+      "visibleName",
+      "showDesignation",
+      "showMobile",
+      "showCategories",
+      "showAddress",
+      "showInstagram",
+      "showTwitter",
+      "showFacebook",
+      "showLinkedIn",
+      "showPosition",
+      "showBusinessName",
+      "showBusinessTagline",
+      "showProfileImage",
+    ];
+
     Object.keys(req.body).forEach((key) => {
       let value = req.body[key];
+
+      // Handle categories (can be sent as JSON string or comma-separated)
       if (key === "categories" && value) {
         if (typeof value === "string") {
           try {
             value = JSON.parse(value);
           } catch {
-            value = [value];
+            // support comma separated values as fallback
+            value = value.split(",").map((v) => v.trim()).filter(Boolean);
           }
         }
       }
+
+      // Coerce known boolean fields coming from form-data (string "true"/"false" or "1"/"0")
+      if (booleanFields.includes(key)) {
+        if (typeof value === "string") {
+          value = value === "true" || value === "1";
+        } else {
+          value = Boolean(value);
+        }
+      }
+
       profile[key] = value;
     });
 
@@ -99,6 +163,24 @@ export const updateMyProfile = async (req, res) => {
 export const createProfile = async (req, res) => {
   try {
     const profileData = req.body;
+
+    // Coerce showProfileImage when creating from form-data
+    if (typeof profileData.showProfileImage !== "undefined") {
+      if (typeof profileData.showProfileImage === "string") {
+        profileData.showProfileImage = profileData.showProfileImage === "true" || profileData.showProfileImage === "1";
+      } else {
+        profileData.showProfileImage = Boolean(profileData.showProfileImage);
+      }
+    }
+
+    // Coerce showCategories when creating from form-data
+    if (typeof profileData.showCategories !== "undefined") {
+      if (typeof profileData.showCategories === "string") {
+        profileData.showCategories = profileData.showCategories === "true" || profileData.showCategories === "1";
+      } else {
+        profileData.showCategories = Boolean(profileData.showCategories);
+      }
+    }
 
     if (req.file) {
       const result = await cloudinary.uploader.upload(req.file.path, {

@@ -109,6 +109,21 @@ import Frame from "../models/Frame.js";
 import cloudinary from "../config/cloudinary.js"; // ✅ import your cloudinary config
 import streamifier from "streamifier"; // ✅ helps to stream buffer data properly
 
+// normalize layout keys for frontend compatibility
+const normalizeLayout = (layout) => {
+  if (!layout || typeof layout !== "object") return layout;
+  const l = { ...layout };
+  // map older 'position' key to 'positionname' which frontend expects
+  if (l.position && !l.positionname) {
+    l.positionname = l.position;
+  }
+  // also map camelCase variants just in case
+  if (l.positionName && !l.positionname) {
+    l.positionname = l.positionName;
+  }
+  return l;
+};
+
 // ✅ Upload frames to Cloudinary
 export const addFrame = async (req, res) => {
   try {
@@ -124,6 +139,7 @@ export const addFrame = async (req, res) => {
     if (req.body.layout) {
       try {
         layoutData = JSON.parse(req.body.layout);
+        layoutData = normalizeLayout(layoutData);
       } catch (e) {
         console.warn("⚠️ Invalid layout JSON, using default empty layout");
       }
@@ -175,9 +191,10 @@ export const updateFrameLayout = async (req, res) => {
     const { id } = req.params;
     const { layout } = req.body;
 
+    const normalized = normalizeLayout(layout);
     const updatedFrame = await Frame.findByIdAndUpdate(
       id,
-      { layout },
+      { layout: normalized },
       { new: true }
     );
 
@@ -201,7 +218,7 @@ export const getFramesByCategory = async (req, res) => {
       frames: frames.map((frame) => ({
         _id: frame._id,
         framePath: frame.framePath,
-        layout: frame.layout,
+        layout: normalizeLayout(frame.layout),
       })),
     });
   } catch (err) {
@@ -213,7 +230,16 @@ export const getFramesByCategory = async (req, res) => {
 export const getAllFrames = async (req, res) => {
   try {
     const frames = await Frame.find();
-    res.status(200).json(frames);
+    res.status(200).json(
+      frames.map((frame) => ({
+        _id: frame._id,
+        category: frame.category,
+        framePath: frame.framePath,
+        layout: normalizeLayout(frame.layout),
+        createdAt: frame.createdAt,
+        updatedAt: frame.updatedAt,
+      }))
+    );
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
@@ -249,5 +275,26 @@ export const updateFrameImage = async (req, res) => {
   } catch (err) {
     console.error('Error updating frame image:', err);
     res.status(500).json({ message: 'Failed to update frame image', error: err.message });
+  }
+};
+
+// ✅ Get single frame by ID (normalized layout)
+export const getFrameById = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const frame = await Frame.findById(id);
+    if (!frame) return res.status(404).json({ message: 'Frame not found' });
+
+    res.status(200).json({
+      _id: frame._id,
+      category: frame.category,
+      framePath: frame.framePath,
+      layout: normalizeLayout(frame.layout),
+      createdAt: frame.createdAt,
+      updatedAt: frame.updatedAt,
+    });
+  } catch (err) {
+    console.error('Error fetching frame by id:', err);
+    res.status(500).json({ message: err.message });
   }
 };

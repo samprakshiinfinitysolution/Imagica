@@ -95,6 +95,7 @@ import {
   getAllFrames,
   updateFrameLayout,
   updateFrameImage,
+  getFrameById,
 } from "../controllers/frameController.js";
 import Frame from "../models/Frame.js";
 
@@ -118,6 +119,9 @@ router.put("/update-image/:id", upload.single("frame"), updateFrameImage);
 
 // ✅ Get frames by category
 router.get("/category/:category", getFramesByCategory);
+
+// ✅ Get frame by id
+router.get("/:id", getFrameById);
 
 // ✅ Get all frames
 router.get("/", getAllFrames);
