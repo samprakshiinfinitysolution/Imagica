@@ -122,7 +122,7 @@ export const updateMyProfile = async (req, res) => {
     });
 
     // ✅ If a new file was uploaded
-    if (req.file && req.file.path) {
+    if (req.file) {
       // Delete old image from Cloudinary if it exists
       if (profile.cloudinary_id) {
         try {
@@ -132,19 +132,45 @@ export const updateMyProfile = async (req, res) => {
         }
       }
 
-      // Upload new image to Cloudinary
-      const result = await cloudinary.uploader.upload(req.file.path, {
-        folder: "profiles",
-      });
+      try {
+        let uploadResult;
+        
+        if (req.file.buffer) {
+          // Handle buffer-based upload (from multer with memoryStorage)
+          uploadResult = await new Promise((resolve, reject) => {
+            const uploadStream = cloudinary.uploader.upload_stream(
+              { folder: "profiles" },
+              (error, result) => {
+                if (error) reject(error);
+                else resolve(result);
+              }
+            );
+            uploadStream.end(req.file.buffer);
+          });
+        } else if (req.file.path) {
+          // Fallback: Handle file path upload (from multer with local storage)
+          uploadResult = await cloudinary.uploader.upload(req.file.path, {
+            folder: "profiles",
+          });
 
-      // Save new image data
-      profile.file = result.secure_url;
-      profile.cloudinary_id = result.public_id;
+          // Delete temp file after upload
+          fs.unlink(req.file.path, (err) => {
+            if (err) console.warn("Temp file cleanup failed:", err.message);
+          });
+        } else {
+          throw new Error("No valid file data in upload");
+        }
 
-      // Optional: delete file from local uploads after upload
-      fs.unlink(req.file.path, (err) => {
-        if (err) console.warn("Temp file cleanup failed:", err.message);
-      });
+        // Save new image data
+        profile.file = uploadResult.secure_url;
+        profile.cloudinary_id = uploadResult.public_id;
+      } catch (err) {
+        console.error("Error uploading file to Cloudinary:", err);
+        return res.status(400).json({ 
+          message: "Failed to upload image",
+          error: err.message 
+        });
+      }
     }
 
     await profile.save();

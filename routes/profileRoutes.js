@@ -171,11 +171,8 @@ const router = express.Router();
 const uploadPath = path.join(process.cwd(), "uploads");
 if (!fs.existsSync(uploadPath)) fs.mkdirSync(uploadPath, { recursive: true });
 
-// ✅ Multer config
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => cb(null, uploadPath),
-  filename: (req, file, cb) => cb(null, Date.now() + "-" + file.originalname),
-});
+// ✅ Multer config - use memory storage for better blob handling
+const storage = multer.memoryStorage();
 const upload = multer({ storage });
 
 // ✅ Public routes

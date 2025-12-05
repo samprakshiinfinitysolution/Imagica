@@ -20,6 +20,7 @@ import contactRoutes from "./routes/contactRoutes.js";
 import frameRoutes from "./routes/frameRoutes.js";
 import adminRoutes from "./routes/adminRoutes.js";
 import notificationRoutes from "./routes/notificationRoutes.js";
+import festivalRoutes from "./routes/festivalRoutes.js";
 
 dotenv.config();
 const app = express();
@@ -87,6 +88,7 @@ app.use("/api/images", imageRoutes);
 app.use("/api/feedback", feedbackRoutes);
 app.use("/api/admins", adminRoutes);
 app.use("/api/notifications", notificationRoutes);
+app.use("/api/festivals", festivalRoutes);
 
 // ✅ Example Cloudinary frame image (for testing only)
 // https://res.cloudinary.com/your-cloud-name/image/upload/v1730000/frames/abc.png

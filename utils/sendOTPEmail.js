@@ -66,7 +66,7 @@ function generateOTPHtml({ appName = "iimagica", otp, expiresIn = 5, supportEmai
 
       <p class="footer">If you didn't request this code, you can safely ignore this email or <a href="mailto:${supportEmail}" style="color:rgba(255,184,77,0.95)">contact support</a>.</p>
       <p class="muted" style="margin-top:12px">This email was sent by ${appName}. For security, do not share this code.</p>
-      <p style="margin-top:8px;font-size:13px;color:rgba(255,255,255,0.8)">Visit us: <a href="${frontendUrl}" target="_blank" rel="noreferrer" style="color:rgba(255,184,77,0.95)">${frontendUrl}</a></p>
+      <p style="margin-top:8px;font-size:13px;color:rgba(255,255,255,0.8)">
     </div>
   </body>
   </html>

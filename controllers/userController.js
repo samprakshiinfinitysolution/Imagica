@@ -12,43 +12,34 @@ export const requestOTP = async (req, res) => {
   try {
     const { email } = req.body;
     if (!email) return res.status(400).json({ message: "Email is required" });
-
     let user = await User.findOne({ email });
 
+    // Rate-limit window: do not send another OTP within this many seconds
+    const MIN_SECONDS_BETWEEN_OTPS = 30;
+    const now = Date.now();
+
     if (user) {
-      if (user.forceOTP) {
-        // ✅ User logged out → OTP required
-        const otp = generateOTP();
-        const otpExpiry = new Date(Date.now() + 5 * 60 * 1000);
-
-        user.otp = otp;
-        user.otpExpiry = otpExpiry;
-        user.forceOTP = false; // reset flag
-        await user.save();
-
-        await sendOTPEmail(email, otp);
-        req.session.email = email;
-
-        return res.status(200).json({
-          message: "OTP sent successfully",
-          userExists: false, // treat like new user flow
-        });
-      } else {
-        // ✅ Old user → direct login
-        const token = jwt.sign(
-          { id: user._id, email: user.email },
-          process.env.JWT_SECRET,
-          { expiresIn: "7d" }
-        );
-
-        return res.status(200).json({
-          message: "Login successful",
-          userExists: true,
-          token,
-        });
+      // If last OTP was sent recently, avoid sending again immediately
+      if (user.lastOtpSentAt && now - new Date(user.lastOtpSentAt).getTime() < MIN_SECONDS_BETWEEN_OTPS * 1000) {
+        return res.status(200).json({ message: `OTP already sent recently. Please wait ${MIN_SECONDS_BETWEEN_OTPS} seconds before requesting again.` });
       }
+
+      // Generate and store new OTP for existing user (always require OTP flow)
+      const otp = generateOTP();
+      const otpExpiry = new Date(Date.now() + 5 * 60 * 1000);
+
+      user.otp = otp;
+      user.otpExpiry = otpExpiry;
+      user.forceOTP = false; // reset flag if present
+      user.lastOtpSentAt = new Date();
+      await user.save();
+
+      await sendOTPEmail(email, otp);
+      req.session.email = email;
+
+      return res.status(200).json({ message: "OTP sent successfully", userExists: true });
     } else {
-      // ✅ New user → create + send OTP
+      // New user → create + send OTP
       const otp = generateOTP();
       const otpExpiry = new Date(Date.now() + 5 * 60 * 1000);
 
@@ -56,16 +47,14 @@ export const requestOTP = async (req, res) => {
         email,
         otp,
         otpExpiry,
+        lastOtpSentAt: new Date(),
       });
 
       req.session.email = email;
 
       await sendOTPEmail(email, otp);
 
-      return res.status(200).json({
-        message: "OTP sent successfully",
-        userExists: false,
-      });
+      return res.status(200).json({ message: "OTP sent successfully", userExists: false });
     }
   } catch (error) {
     console.error(error);
@@ -173,11 +162,19 @@ export const resendOTP = async (req, res) => {
     const user = await User.findOne({ email });
     if (!user) return res.status(404).json({ message: "User not found" });
 
+    // Rate-limit resend: avoid sending multiple OTPs in quick succession
+    const MIN_SECONDS_BETWEEN_OTPS = 30;
+    const now = Date.now();
+    if (user.lastOtpSentAt && now - new Date(user.lastOtpSentAt).getTime() < MIN_SECONDS_BETWEEN_OTPS * 1000) {
+      return res.status(200).json({ message: `OTP already sent recently. Please wait ${MIN_SECONDS_BETWEEN_OTPS} seconds before resending.` });
+    }
+
     const otp = generateOTP();
     const otpExpiry = new Date(Date.now() + 5 * 60 * 1000);
 
     user.otp = otp;
     user.otpExpiry = otpExpiry;
+    user.lastOtpSentAt = new Date();
     await user.save();
 
     await sendOTPEmail(email, otp);
